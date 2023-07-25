@@ -30,7 +30,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
     public Object visitDeclaracao_tipo(Declaracao_tipoContext ctx) {
         TabelaDeSimbolos escopoAtual = pilhadeTabelas.getPilhaTabelas();
         
-        //verifica se ja esta no escopo
+        //verifica se declaracao ja existe no escopo
         if (escopoAtual.existe(ctx.IDENT().getText())) {
              AlgumaSemanticoUtils.adicionarErroSemantico(ctx.start, "tipo " + ctx.IDENT().getText() + " declarado duas vezes num mesmo escopo");
         } else {
@@ -58,7 +58,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                     escopoAtual.adicionar(ctx.IDENT().getText(), TabelaDeSimbolos.TipoAlguma.reg, TabelaDeSimbolos.Estrutura.tipo);
                 }
 
-
+                //verifica se ja foi declarado dentro de um registro
                 for (TabelaDeSimbolos.EntradaTabelaDeSimbolos re : varReg) {
                     String nomeIdentificador = ctx.IDENT().getText() + '.' + re.nome;
                     
@@ -100,6 +100,8 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                 
                 if (tipo != null) {
                     escopoAtual.adicionar(nomeId, tipo, TabelaDeSimbolos.Estrutura.var);
+                
+                //identificando o tipo da declaracao
                 } else {
                     TerminalNode identTipo =    ctx.variavel().tipo() != null
                                                 && ctx.variavel().tipo().tipo_estendido() != null 
@@ -120,6 +122,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                             }
                         }
 
+                        //verifica se ja foi declarado e adiciona na tabela de simbolos
                         if (escopoAtual.existe(nomeId)) {
                             
                             AlgumaSemanticoUtils.adicionarErroSemantico(id.start, "identificador " + nomeId + " ja declarado anteriormente");
@@ -132,6 +135,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                             }   
                         }
                         
+                    //verifica se ja foi declarado dentro de um registro
                     } else if (ctx.variavel().tipo().registro() != null) {
                         ArrayList<TabelaDeSimbolos.EntradaTabelaDeSimbolos> varReg = new ArrayList<>();
                         
@@ -174,12 +178,15 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
     public Object visitDeclaracao_global(Declaracao_globalContext ctx) {
         TabelaDeSimbolos escopoAtual = pilhadeTabelas.getPilhaTabelas();
         Object retorno;
+
+        //verifica se ja foi declarado
         if (escopoAtual.existe(ctx.IDENT().getText())) {
             AlgumaSemanticoUtils.adicionarErroSemantico(ctx.start, ctx.IDENT().getText() + " ja declarado anteriormente");
             retorno = super.visitDeclaracao_global(ctx);
         } else {
             TabelaDeSimbolos.TipoAlguma returnTypeFuncAlguma = TabelaDeSimbolos.TipoAlguma.Void;
 
+            //verifica se a declaracao eh de uma funcao ou procedimento
             if (ctx.getText().startsWith("funcao")) {
                 returnTypeFuncAlguma = AlgumaSemanticoUtils.getTipo(ctx.tipo_estendido().getText());
                 escopoAtual.adicionar(ctx.IDENT().getText(), returnTypeFuncAlguma,TabelaDeSimbolos.Estrutura.func);
@@ -191,6 +198,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
             pilhadeTabelas.create(returnTypeFuncAlguma);
             TabelaDeSimbolos escopoGlobal = escopoAtual;
             
+            //entra no escopo da funcao/procedimento
             escopoAtual = pilhadeTabelas.getPilhaTabelas();
             if (ctx.parametros() != null) {
                 for (ParametroContext parametro : ctx.parametros().parametro()) {
@@ -205,8 +213,9 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                             nomeIdentificador += ident.getText();
                         }
 
+                        //verifica as declaracoes dentro da funcao/procedimento
                         if (escopoAtual.existe(nomeIdentificador)) {
-                            AlgumaSemanticoUtils.adicionarErroSemantico(ctx.start, "identificador1 " + nomeIdentificador + " ja declarado anteriormente");
+                            AlgumaSemanticoUtils.adicionarErroSemantico(ctx.start, "identificador " + nomeIdentificador + " ja declarado anteriormente");
                         } else {
                             TabelaDeSimbolos.TipoAlguma tipo = AlgumaSemanticoUtils.getTipo(parametro.tipo_estendido().getText());
 
@@ -233,7 +242,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
                                     }
 
                                     if(escopoAtual.existe(nomeIdentificador)){
-                                        AlgumaSemanticoUtils.adicionarErroSemantico(identificador.start, "identificador2 " + nomeIdentificador + " ja declarado anteriormente");
+                                        AlgumaSemanticoUtils.adicionarErroSemantico(identificador.start, "identificador " + nomeIdentificador + " ja declarado anteriormente");
                                     } else {
                                         EntradaTabelaDeSimbolos entrada = escopoAtual.new EntradaTabelaDeSimbolos(nomeIdentificador, TabelaDeSimbolos.TipoAlguma.reg, TabelaDeSimbolos.Estrutura.var);
                                         escopoAtual.adicionar(entrada);
@@ -393,6 +402,7 @@ public class AlgumaSemantico extends AlgumaBaseVisitor {
         if (ctx.IDENT() != null) {
             String name = ctx.IDENT().getText();
             
+            //verifica a compatibilidade dos argumentos na passagem de parametros ao chamar uma funcao
             if (escopoAtual.existe(ctx.IDENT().getText())) {
                 List<EntradaTabelaDeSimbolos> params = escopoAtual.getTypeProperties(name);
                 boolean error = false;

@@ -40,6 +40,7 @@ public class Principal {
                 MyCustomErrorListener mcel = new MyCustomErrorListener(pw, contador_erro);
                 parser.addErrorListener(mcel);
                 
+                //Cria arvore
                 ProgramaContext arvore = parser.programa();
                 AlgumaSemantico as = new AlgumaSemantico();
                 as.visitPrograma(arvore);
